@@ -7,14 +7,18 @@ Este projeto, desenvolvido como parte da Sprint 2 do Challenge FIAP, foca na cri
 ## Estrutura do Repositório
 
 * `/`: Contém este README.md.
-* `notebooks/` ou `scripts/`: Contém o(s) notebook(s) ou script(s) Python com o código completo.
-    * `Sprint2_Analise_Completa.ipynb` (Exemplo de nome de notebook)
-* `data/`: (Opcional, se incluir dados ou exemplos) Contém os arquivos de dados de entrada (ou links/descrição para obtê-los).
-    * `tabela5457 - Tabela.csv`: Dados históricos de produtividade (Fonte: IBGE Tabela 5457, filtrado/referente a Ilhéus/Fazenda Yrere).
-    * `satveg_planilha.xlsx - NDVI.csv`: Dados de série temporal NDVI (Fonte: Plataforma SatVeg, referente a um ponto na Fazenda Yrere).
+* `src/`: Contém o(s) notebook(s) ou script(s) Python com o código completo.
+    * `Challenge_Ingredion_Sprint_2.ipynb`
+    * `requirements.txt`: Lista das bibliotecas Python necessárias.
+* `data/`: Contém os arquivos de dados de entrada.
+    * `Producao.csv`: Dados históricos de produtividade (Fonte: IBGE, filtrado/referente a Ilhéus/Fazenda Yrere).
+    * `NDVI.csv`: Dados de série temporal NDVI (Fonte: Plataforma SatVeg referente a um ponto na Fazenda Yrere).
+    * `test`: Pasta com as imagens de test do treinamento
+    * `train`: Pasta com as imagens de treinamento
+    * `val`: Pasta com as imagens de validação do treinamento
 * `images/`: Contém imagens de exemplo, prints de análises e gráficos de resultados para incluir neste README.
 * `output/`: Contém modelos salvos (ex: `best_segmentation_model.pth`).
-* `requirements.txt`: Lista das bibliotecas Python necessárias.
+
 
 ## 1. Preparação e Pré-processamento dos Dados
 
@@ -34,7 +38,7 @@ O processo de preparação dos dados envolveu múltiplas fontes e etapas:
 
 ### 1.2. Dados Históricos de Produtividade
 
-* **Fonte:** Arquivo `tabela5457 - Tabela.csv`, contendo dados anuais (1994-2023) agregados para a Fazenda Yrere / Município de Ilhéus.
+* **Fonte:** Arquivo `Producao.csv`, contendo dados anuais (1994-2023) agregados para a Fazenda Yrere / Município de Ilhéus.
 * **Pré-processamento:**
     * Carregamento com Pandas.
     * Seleção das colunas relevantes: `Ano`, `Área colhida (Hectares)` e `Rendimento médio da produção (Quilogramas por Hectare)`.
@@ -43,7 +47,7 @@ O processo de preparação dos dados envolveu múltiplas fontes e etapas:
 
 ### 1.3. Dados de NDVI
 
-* **Fonte:** Arquivo `satveg_planilha.xlsx - NDVI.csv`, contendo uma série temporal de valores NDVI para um ponto de referência na área de estudo (2000-2025).
+* **Fonte:** Arquivo `NDVI.csv`, contendo uma série temporal de valores NDVI para um ponto de referência na área de estudo (2000-2025).
 * **Pré-processamento:**
     * Carregamento com Pandas, tratando problemas de cabeçalho no arquivo CSV (usando `header=2` e renomeação manual das colunas para `Data` e `NDVI`).
     * Remoção de linhas/colunas irrelevantes ou vazias.
@@ -99,60 +103,73 @@ Dois modelos principais foram desenvolvidos:
 * **Análise de Correlação:** Uma matriz de correlação foi calculada para as features e a variável alvo no DataFrame final (`df_final_cleaned`).
 
     * *Observação:* As correlações lineares entre as features disponíveis e o rendimento médio foram fracas. No entanto, multicolinearidade foi observada entre as features NDVI.
-    * `[Inserir Print/Heatmap da Matriz de Correlação aqui]`
+    * ![Heatmap](/images/Heatmap.png)
 
-* *Outras análises (adicionar conforme realizado):*
-    * `[Inserir Print de Análise de Série Temporal NDVI aqui (se feita)]`
-    * `[Inserir Print de Pairplot ou outras visualizações aqui (se feitas)]`
+    * *Outras análises (adicionar conforme realizado):*
+    * ![Análise de Série Temporal NDVI](/images/image.png)
+    * ![Pairplot](/images/Pairplot.png)
 
 ## 5. Resultados e Justificativa Técnica
 
 ### 5.1. Resultados da Segmentação
 
-* O modelo DeepLabV3+ foi treinado por `[Número de Épocas]` épocas.
-* A melhor métrica IoU obtida no conjunto de **validação** foi `[Valor do Best Val IoU]`.
+* O modelo DeepLabV3+ foi treinado por `10` épocas.
+* A melhor métrica IoU obtida no conjunto de **validação** foi `0.3583`.
 * No conjunto de **teste**, o modelo alcançou um **IoU médio de `[Valor do Test IoU]`**.
 
     * **Visualização de Exemplo:**
-        `[Inserir Gráfico: Imagem Original vs Máscara Real vs Predição aqui]`
+        ![Imagem Original vs Máscara Real vs Predição](/images/imagemreal_mascara_real_predicao.png)
 
 ### 5.2. Resultados da Previsão de Rendimento
 
-* O modelo RandomForestRegressor foi treinado nos dados de 2001 a `[Último Ano de Treino]` e testado nos anos `[Primeiro Ano de Teste]` a 2023.
+* O modelo RandomForestRegressor foi treinado nos dados de 2001 a 2024 e testado nos anos 2013 a 2023.
 * **Métricas de Avaliação (Conjunto de Teste):**
-    * RMSE: `[Valor do RMSE]` kg/ha
-    * MAE: `[Valor do MAE]` kg/ha
-    * **R²: `[Valor do R2]`**
-* **Interpretação:** O valor do R² foi **negativo (`[Valor do R2]`)**, indicando que o modelo performou pior do que um modelo ingênuo que previsse apenas a média do rendimento para o período de teste. Isso sugere que o modelo **não generalizou bem** para os anos não vistos, possivelmente devido ao pequeno tamanho do dataset de treino (2001-`[Último Ano de Treino]`), overfitting, ou falta de features preditivas suficientes para capturar a dinâmica do rendimento nos anos de teste.
+    * RMSE: `37.9532` kg/ha
+    * MAE: `29.9620` kg/ha
+    * **R²: `-0.3796`**
+* **Interpretação:** O valor do R² foi **negativo (`-0.3796`)**, indicando que o modelo performou pior do que um modelo ingênuo que previsse apenas a média do rendimento para o período de teste. Isso sugere que o modelo **não generalizou bem** para os anos não vistos, possivelmente devido ao pequeno tamanho do dataset de treino (2001-2023), overfitting, ou falta de features preditivas suficientes para capturar a dinâmica do rendimento nos anos de teste.
     * **Gráfico Previsto vs Real:**
-        `[Inserir Gráfico: Rendimento Previsto vs Real no Teste aqui]`
+    ![Rendimento Previsto vs Real](/images/rendimento_previsto_real.png)
 * **Importância das Features:** As features mais importantes identificadas pelo RandomForest foram o rendimento e a área colhida do ano anterior, seguidas pela área colhida atual. As features de NDVI tiveram menor importância relativa neste modelo.
-    * `[Inserir Gráfico: Importância das Features aqui]`
+    * `[Inserir Gráfico: Importância das Features aqui]`![Importância das Features](/images/importancia_das_features.png)
 
 * **Conclusão Técnica:** Embora o fluxo de trabalho completo tenha sido implementado, o modelo final de previsão de rendimento apresentou limitações significativas em sua capacidade preditiva para o período de teste com as features disponíveis. Recomenda-se explorar features adicionais (meteorologia detalhada, dados de manejo), modelos alternativos, ou obter um histórico de dados mais longo para melhorar a performance. A limitação na integração da feature de segmentação também impactou o potencial do modelo.
 
-## 6. Como Executar
+## 6. Como Executar (Usando Google Colab)
 
-1.  **Clone o repositório:**
-    ```bash
-    git clone [https://docs.github.com/articles/referencing-and-citing-content](https://docs.github.com/articles/referencing-and-citing-content)
-    cd [Nome do repositório]
-    ```
-2.  **Crie um ambiente virtual (recomendado):**
-    ```bash
-    python -m venv venv
-    source venv/bin/activate # Linux/Mac
-    # venv\Scripts\activate # Windows
-    ```
-3.  **Instale as dependências:**
-    ```bash
-    pip install -r requirements.txt
-    ```
-4.  **Configure os Caminhos:** Abra o notebook/script principal (ex: `Sprint2_Analise_Completa.ipynb`) e **AJUSTE** os caminhos nas variáveis `DRIVE_BASE_PATH`, `PROD_CSV_PATH`, `NDVI_CSV_PATH` e `SAVE_DIR` para apontar para os locais corretos dos seus dados e onde salvar o modelo.
-5.  **Execute o Notebook/Script:** Rode as células do notebook sequencialmente ou execute o script Python.
+Este projeto foi desenvolvido e testado primariamente no Google Colab. Siga os passos abaixo para executá-lo:
+
+1.  **Abra o Notebook no Google Colab:**
+    * Acesse o repositório do projeto no GitHub: [https://github.com/Fiap-Team-1tiaor-2024/ingredion-challenge](https://github.com/Fiap-Team-1tiaor-2024/ingredion-challenge)
+    * Navegue até a pasta `notebooks/` ou `scripts/` (ou onde quer que o arquivo `.ipynb` principal esteja localizado).
+    * Clique no arquivo do notebook (ex: `Challenge_Ingredion_Sprint_2.ipynb`).
+    * No topo da visualização do notebook no GitHub, clique no emblema "Open in Colab".
+
+2.  **Prepare o Ambiente Colab:**
+    * **Monte seu Google Drive:** A primeira célula do notebook contém código para montar seu Google Drive. Execute esta célula e autorize o acesso quando solicitado. Isso é essencial para carregar seus dados e salvar o modelo treinado.
+    * **Instale Dependências (se necessário):** A primeira célula também pode conter comandos `!pip install ...` (geralmente comentados). O Colab já vem com muitas bibliotecas pré-instaladas (`pandas`, `numpy`, `scikit-learn`, `matplotlib`, `opencv`, `torch`, `torchvision`), mas se alguma específica estiver faltando ou precisar de uma versão diferente, descomente e execute os comandos `!pip install`. A biblioteca `openpyxl` pode ser necessária para ler o arquivo `.xlsx`: `!pip install openpyxl`.
+
+3.  **Configure os Caminhos dos Arquivos:**
+    * **MUITO IMPORTANTE:** Na primeira célula de código (onde estão as configurações e imports), localize as variáveis de caminho como `DRIVE_BASE_PATH`, `PROD_CSV_PATH`, `NDVI_FILE_PATH`, `SAVE_DIR`, etc.
+    * **AJUSTE** esses caminhos para que correspondam **exatamente** à estrutura de pastas e aos nomes dos arquivos dentro do **seu Google Drive**, onde você salvou os dados (imagens, máscaras, CSV, XLSX) e onde deseja salvar os resultados (como o modelo treinado).
+    * Exemplo: Se seus dados estão em uma pasta chamada "Challenge_Sprint2" dentro do seu "Meu Drive", o `DRIVE_BASE_PATH` seria algo como:
+      ```python
+      DRIVE_BASE_PATH = "/content/drive/MyDrive/Challenge_Sprint2/data"
+      ```
+
+4.  **Execute as Células:**
+    * Execute as células do notebook sequencialmente, uma após a outra, clicando no botão "Play" de cada célula ou usando "Ambiente de execução" -> "Executar tudo".
+    * Acompanhe a saída de cada célula para verificar se há erros ou avisos.
+    * **Atenção:** O treinamento do modelo de segmentação (Célula 6) pode demorar bastante tempo, dependendo da disponibilidade da GPU no Colab e do número de épocas (`NUM_EPOCHS_SEGMENTATION`).
+
+5.  **Resultados:**
+    * Os gráficos (Heatmap, Previsto vs Real, etc.) serão exibidos no output das células correspondentes. Salve-os como imagens para incluir neste README.
+    * O melhor modelo de segmentação será salvo no caminho especificado pela variável `BEST_MODEL_PATH` no seu Google Drive.
+    * As métricas de avaliação dos modelos serão impressas na saída das células de avaliação.
 
 ## 7. Autores
 
-* [Seu Nome / Nome do Grupo]
-
+* Gabriela da Cunha Rocha - RM561041@fiap.com.br
+* Gustavo Segantini Rossignolli - RM560111@fiap.com.br
+* Vitor Lopes Romão - RM559858@fiap.com.br
 ---

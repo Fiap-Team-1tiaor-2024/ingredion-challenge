@@ -76,17 +76,19 @@ Dois tipos principais de modelos foram desenvolvidos:
 
 ### 3.2. Modelos de Previsão de Rendimento (Comparativo)
 
-- **Modelos Testados:** `Linear Regression`, `Ridge Regression`, `Decision Tree Regressor`, `Random Forest Regressor`, `Gradient Boosting Regressor`.
-- **Justificativa:** Para avaliar diferentes abordagens de regressão no dataset disponível (relativamente pequeno após limpeza). Foram incluídos:
-  - Modelos Lineares (Linear, Ridge): Baselines simples, bons para relações lineares e interpretação de coeficientes. Ridge adiciona regularização.
-  - Árvore de Decisão: Modelo não-linear simples, propenso a overfitting mas útil para entender partições nos dados.
-  - Modelos Ensemble (Random Forest, Gradient Boosting): Combinam múltiplas árvores para melhorar a robustez, capturar não-linearidades e interações, geralmente com melhor desempenho preditivo. RandomForest é menos sensível a hiperparâmetros, Gradient Boosting pode ser mais potente mas requer mais tuning.
-- **Lógica Preditiva:** Cada modelo aprende a mapear as features de entrada (área, NDVI, clima, lags) para uma previsão do valor contínuo do `Rendimento_Medio_kg_ha`, usando suas respectivas lógicas internas (linear, partições de árvore, combinação de árvores).
-- **Avaliação:** Comparação baseada em RMSE, MAE e R² no conjunto de teste (separado temporalmente), além da análise de importância/coeficientes das features.
+* **Modelos Testados:** `Linear Regression`, `Ridge Regression`, `Decision Tree Regressor`, **`Support Vector Regression (SVR)`**, `Random Forest Regressor`, `Gradient Boosting Regressor`, **`XGBoost Regressor`**.
+* **Justificativa:** Para avaliar um espectro amplo de abordagens de regressão no dataset disponível (relativamente pequeno). Foram incluídos:
+    * *Modelos Lineares (Linear, Ridge):* Baselines simples, bons para relações lineares.
+    * *Árvore de Decisão:* Modelo não-linear simples, útil para entender partições nos dados.
+    * *SVR:* Modelo baseado em máquinas de vetores de suporte, eficaz em espaços de alta dimensão e flexível com diferentes kernels (linear, RBF) para capturar não-linearidades.
+    * *Modelos Ensemble (Random Forest, Gradient Boosting):* Combinam múltiplas árvores para melhorar robustez e desempenho.
+    * *XGBoost:* Uma implementação otimizada e popular de Gradient Boosting, conhecida pela performance, velocidade e inclusão de regularização para evitar overfitting. Frequentemente usado como benchmark de alto desempenho em dados tabulares.
+* **Lógica Preditiva:** Cada modelo aprende a mapear as features de entrada para uma previsão do `Rendimento_Medio_kg_ha`, usando suas respectivas abordagens matemáticas (linear, planos de separação com margem, partições de árvore, combinação ponderada de árvores).
+* **Avaliação:** Comparação baseada em RMSE, MAE e R² no conjunto de teste (separado temporalmente), além da análise de importância/coeficientes das features (quando aplicável).
 
 ## 4. Análises Exploratórias e Estatísticas
 
-- **Análise NDVI:** Estatísticas descritivas calculadas, série temporal plotada (opcional).
+- **Análise NDVI:** Estatísticas descritivas calculadas, série temporal plotada.
 - **Análise de Correlação:** Matriz de correlação calculada e visualizada para features e alvo no dataset final.
   ![Heatmap](/images//heatmap.png)
 

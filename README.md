@@ -19,7 +19,7 @@ Este projeto, desenvolvido como parte da Sprint 2 do Challenge FIAP, foca na cri
 - `images/`: Contém imagens de exemplo, prints de análises e gráficos de resultados para incluir neste README.
 - `output/`: Contém modelos salvos (ex: `best_segmentation_model.pth`).
 
-**Link do Repositório: <https://github.com/Fiap-Team-1tiaor-2024/ingredion-challenge>**
+**Link do Youtube: <https://youtu.be/a-sD4Pjt0Hc>**
 
 ## 1. Preparação e Pré-processamento dos Dados
 

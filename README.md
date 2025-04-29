@@ -94,7 +94,7 @@ Dois tipos principais de modelos foram desenvolvidos:
   **NDVI:**  
   ![NDVI](/images/ndvi.png)  
   **Pairplot:**  
-  ![Pairplot](/images/pairplot.png)
+  ![pairplot](/images/pairplot.png)
 
 ## 5. Resultados e Justificativa Técnica
 

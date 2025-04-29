@@ -2,23 +2,24 @@
 
 ## Visão Geral
 
-Este projeto, desenvolvido como parte da Sprint 2 do Challenge FIAP, foca na criação de um modelo de Inteligência Artificial para prever a produtividade agrícola (especificamente o rendimento médio em kg/ha). A abordagem envolveu o uso de imagens de satélite para segmentação de áreas de interesse e a integração com dados históricos de produtividade e séries temporais de NDVI para uma fazenda específica (Yrere) no município de Ilhéus, BA.
+Este projeto, desenvolvido como parte da Sprint 2 do Challenge FIAP, foca na criação de um modelo de Inteligência Artificial para prever a produtividade agrícola (especificamente o rendimento médio em kg/ha). A abordagem envolveu o uso de imagens de satélite para segmentação de áreas de interesse e a integração com dados históricos de produtividade e séries temporais de NDVI para uma fazenda específica (Yrere) no município de Ilhéus, BA. Foram testados múltiplos modelos de regressão para a previsão final de rendimento.
 
 ## Estrutura do Repositório
 
-* `/`: Contém este README.md.
-* `src/`: Contém o(s) notebook(s) ou script(s) Python com o código completo.
-    * `Challenge_Ingredion_Sprint_2.ipynb`
-    * `requirements.txt`: Lista das bibliotecas Python necessárias.
-* `data/`: Contém os arquivos de dados de entrada.
-    * `Producao.csv`: Dados históricos de produtividade (Fonte: IBGE, filtrado/referente a Ilhéus/Fazenda Yrere).
-    * `NDVI.csv`: Dados de série temporal NDVI (Fonte: Plataforma SatVeg referente a um ponto na Fazenda Yrere).
-    * `test`: Pasta com as imagens de test do treinamento
-    * `train`: Pasta com as imagens de treinamento
-    * `val`: Pasta com as imagens de validação do treinamento
-* `images/`: Contém imagens de exemplo, prints de análises e gráficos de resultados para incluir neste README.
-* `output/`: Contém modelos salvos (ex: `best_segmentation_model.pth`).
+- `/`: Contém este README.md.
+- `src/`: Contém o(s) notebook(s) ou script(s) Python com o código completo.
+  - `Challenge_Ingredion_Sprint_2.ipynb`
+  - `requirements.txt`: Lista das bibliotecas Python necessárias.
+- `data/`: Contém os arquivos de dados de entrada.
+  - `Producao.csv`: Dados históricos de produtividade (Fonte: IBGE, filtrado/referente a Ilhéus/Fazenda Yrere).
+  - `NDVI.csv`: Dados de série temporal NDVI (Fonte: Plataforma SatVeg referente a um ponto na Fazenda Yrere).
+  - `test`: Pasta com as imagens de test do treinamento
+  - `train`: Pasta com as imagens de treinamento
+  - `val`: Pasta com as imagens de validação do treinamento
+- `images/`: Contém imagens de exemplo, prints de análises e gráficos de resultados para incluir neste README.
+- `output/`: Contém modelos salvos (ex: `best_segmentation_model.pth`).
 
+**Link do Repositório: <https://github.com/Fiap-Team-1tiaor-2024/ingredion-challenge>**
 
 ## 1. Preparação e Pré-processamento dos Dados
 
@@ -26,150 +27,138 @@ O processo de preparação dos dados envolveu múltiplas fontes e etapas:
 
 ### 1.1. Dados de Imagem e Máscara (Segmentação)
 
-* **Fonte:** Imagens de satélite (formato `.jpg`) e máscaras de segmentação binárias (`_mask.png`) representando áreas de interesse (presumivelmente cultivo).
-* **Carregamento:** Foi criada uma classe `SatelliteDataset` customizada em PyTorch para carregar pares de imagem/máscara. Verificações foram implementadas para garantir a existência de máscaras correspondentes e a leitura correta dos arquivos.
-* **Pré-processamento:**
-    * As imagens foram convertidas para RGB.
-    * As máscaras (tons de cinza) foram convertidas para formato binário (0.0 ou 1.0).
-    * **Transformações (Albumentations):**
-        * *Treino:* Redimensionamento (512x512), Aumentos de dados (Flip Horizontal/Vertical, Brilho/Contraste Aleatório), Normalização (médias/std da ImageNet).
-        * *Validação/Teste:* Redimensionamento (512x512), Normalização.
-    * **DataLoaders:** Foram criados DataLoaders do PyTorch para treino, validação e teste, com tratamento para batches inválidos (`collate_fn`).
+- **Fonte:** Imagens de satélite (`.jpg`) e máscaras de segmentação (`_mask.png`).
+- **Carregamento:** Classe `SatelliteDataset` customizada em PyTorch.
+- **Pré-processamento:** Conversão RGB/Binário, Transformações (Resize, Augmentation, Normalize) com Albumentations, DataLoaders PyTorch.
 
 ### 1.2. Dados Históricos de Produtividade
 
-* **Fonte:** Arquivo `Producao.csv`, contendo dados anuais (1994-2023) agregados para a Fazenda Yrere / Município de Ilhéus.
-* **Pré-processamento:**
-    * Carregamento com Pandas.
-    * Seleção das colunas relevantes: `Ano`, `Área colhida (Hectares)` e `Rendimento médio da produção (Quilogramas por Hectare)`.
-    * Renomeação das colunas para facilitar o uso (`Area_Colhida_ha`, `Rendimento_Medio_kg_ha`).
-    * Conversão da coluna `Ano` para tipo inteiro.
+- **Fonte:** Arquivo `Producao.csv` (anual, 1994-2023, Ilhéus/Yrere).
+- **Pré-processamento:** Seleção (`Ano`, `Área colhida`, `Rendimento médio`), Renomeação (`Area_Colhida_ha`, `Rendimento_Medio_kg_ha`).
 
 ### 1.3. Dados de NDVI
 
-* **Fonte:** Arquivo `NDVI.csv`, contendo uma série temporal de valores NDVI para um ponto de referência na área de estudo (2000-2025).
-* **Pré-processamento:**
-    * Carregamento com Pandas, tratando problemas de cabeçalho no arquivo CSV (usando `header=2` e renomeação manual das colunas para `Data` e `NDVI`).
-    * Remoção de linhas/colunas irrelevantes ou vazias.
-    * Conversão da coluna `Data` para o formato datetime (dd/mm/yyyy).
-    * Conversão da coluna `NDVI` para formato numérico (float), tratando vírgulas como separadores decimais.
-    * Remoção de linhas com datas ou valores NDVI inválidos.
-    * Criação da coluna `Ano` extraída da data.
+- **Fonte:** Arquivo `NDVI.csv` (série temporal, ponto de referência, 2000-2025).
+- **Pré-processamento:** Leitura com `pd.read_excel`, tratamento de cabeçalho, conversão de `Data` (datetime) e `NDVI` (float), criação da coluna `Ano`.
 
 ### 1.4. Integração e Engenharia de Features (Dados Tabulares)
 
-* **Agregação NDVI:** Os dados de NDVI foram filtrados para o período correspondente aos dados de produtividade (até 2023) e valores muito baixos (possivelmente ruído, NDVI <= 0.1) foram removidos. Em seguida, foram agrupados por `Ano` para calcular estatísticas anuais: `ndvi_medio`, `ndvi_max`, `ndvi_min`, `ndvi_std`, `ndvi_count`.
-* **Merge:** O DataFrame de produtividade (`df_prod`) foi unido (merged) com o DataFrame de NDVI agregado (`df_ndvi_agg`) usando a coluna `Ano`. Um `left merge` foi utilizado para manter todos os anos da base de produtividade.
-* **Features Lagged:** Foram criadas features baseadas no ano anterior (`lag1`) para o rendimento médio e a área colhida, visando capturar dependências temporais.
-* **Limpeza Final:** Linhas contendo valores `NaN` (resultantes do merge para anos sem NDVI e da criação das features lagged) foram removidas, resultando em um DataFrame final (`df_final_cleaned`) cobrindo os anos de 2001 a 2023, pronto para a modelagem.
+- **Agregação NDVI:** Cálculo de estatísticas anuais (`ndvi_medio`, `ndvi_max`, etc.) e trimestrais (`ndvi_medio_trim_TX`) a partir dos dados de NDVI (filtrados > 0.1 e para anos <= 2023).
+- **Features Meteorológicas (Exemplo):** Demonstração da agregação anual e trimestral de dados hipotéticos de precipitação (o código para carregar e agregar dados reais do INMET foi fornecido como exemplo, mas precisa ser implementado com dados reais baixados pelo usuário).
+- **Merge:** União dos dataframes de produtividade, NDVI agregado (anual e trimestral) e clima agregado (anual e trimestral - se implementado) usando a coluna `Ano`.
+- **Features Lagged:** Criação de features do ano anterior (`_lag1`) para rendimento e área colhida.
+- **Limpeza Final:** Remoção de linhas com `NaN` (anos iniciais sem NDVI/lag/clima), resultando no dataframe `df_ready_for_model` (ou `df_final_cleaned`) para modelagem (anos 2001-2023, ou o período resultante após adicionar features climáticas).
 
 ## 2. Justificativa das Variáveis Selecionadas
 
-Para o modelo final de previsão de rendimento, as seguintes variáveis foram selecionadas:
+Para o modelo final de previsão de rendimento, as seguintes variáveis foram consideradas/utilizadas:
 
-* **Variável Alvo (y):**
-    * `Rendimento_Medio_kg_ha`: Representa a produtividade por unidade de área, uma métrica padrão e normalizada para avaliação de desempenho agrícola.
-* **Features (X):**
-    * `Area_Colhida_ha`: A área efetivamente colhida pode influenciar a logística e potencialmente se correlacionar com fatores que afetam o rendimento médio.
-    * `ndvi_medio`, `ndvi_max`, `ndvi_min`, `ndvi_std`: Estatísticas anuais do NDVI (filtrado > 0.1). O NDVI é um forte indicador da saúde e densidade da vegetação. Esperava-se que a média anual, o pico, a variabilidade e o mínimo durante o período de crescimento pudessem se correlacionar com o rendimento final. A agregação anual foi uma necessidade devido à estrutura dos dados de produtividade disponíveis.
-    * `ndvi_count`: Número de leituras válidas de NDVI no ano, pode indicar a qualidade/confiabilidade das estatísticas de NDVI.
-    * `Rendimento_Medio_kg_ha_lag1`: O rendimento do ano anterior é frequentemente um forte preditor do rendimento atual devido a fatores persistentes (solo, manejo, clima local).
-    * `Area_Colhida_ha_lag1`: A área colhida no ano anterior pode influenciar decisões de plantio e recursos no ano atual.
-* **Feature de Segmentação (Não Utilizada):**
-    * Embora um modelo de segmentação tenha sido treinado com sucesso (ver seção 3.1), **não foi possível** criar uma feature anual baseada na área segmentada média. Isso ocorreu devido à **impossibilidade de mapear as imagens de satélite individuais (usadas na segmentação) a anos específicos (2001-2023)** para a Fazenda Yrere. Esta limitação impediu a integração direta dos resultados da segmentação no modelo de previsão de rendimento.
+- **Variável Alvo (y):**
+  - `Rendimento_Medio_kg_ha`: Produtividade por unidade de área.
+- **Features (X) Potenciais:**
+  - `Area_Colhida_ha`: Área colhida no ano corrente.
+  - Estatísticas NDVI (Anuais/Trimestrais): `ndvi_medio`, `ndvi_max`, `ndvi_min`, `ndvi_std`, `ndvi_medio_trim_TX`. Indicadores da saúde da vegetação.
+  - Features Meteorológicas (Anuais/Trimestrais): Ex: `precip_total_anual`, `temp_max_media_anual`, `precip_total_trim_TX`. Fatores climáticos que influenciam fortemente a agricultura (requer dados do INMET).
+  - Features Lagged: `Rendimento_Medio_kg_ha_lag1`, `Area_Colhida_ha_lag1`. Desempenho do ano anterior.
+- **Feature de Segmentação (Não Utilizada):** Conforme mencionado, não foi possível integrar uma feature da área segmentada devido à falta de mapeamento temporal das imagens.
+
+A seleção final de features para treinar os modelos (`features` no código) inclui as colunas disponíveis no dataframe final após a integração e engenharia.
 
 ## 3. Justificativa dos Modelos e Lógica Preditiva
 
-Dois modelos principais foram desenvolvidos:
+Dois tipos principais de modelos foram desenvolvidos:
 
 ### 3.1. Modelo de Segmentação de Imagens
 
-* **Modelo Escolhido:** `DeepLabV3+` com backbone `ResNet-50`, pré-treinado na ImageNet.
-    * **Justificativa:** É uma arquitetura estado-da-arte para segmentação semântica, eficaz na captura de contextos multi-escala em imagens. O uso de pesos pré-treinados (transfer learning) acelera o treinamento e melhora o desempenho, especialmente com datasets menores.
-* **Adaptação:** A camada classificadora final foi substituída por uma convolução 1x1 com 1 canal de saída, adequada para a tarefa de segmentação binária (identificar uma única classe de interesse vs fundo).
-* **Lógica Preditiva:** O modelo aprende a associar padrões de pixels e texturas nas imagens de satélite a uma máscara binária que indica a presença da área de interesse (provavelmente cultivo). A função de perda utilizada foi `BCEWithLogitsLoss`, adequada para segmentação binária.
-* **Avaliação:** O desempenho foi avaliado usando a métrica Intersection over Union (IoU), que mede a sobreposição entre a máscara prevista e a máscara real.
+- **Modelo:** `DeepLabV3+` com backbone `ResNet-50`, pré-treinado.
+- **Justificativa:** Estado-da-arte para segmentação semântica, adaptado para classificação binária (cultivo/não-cultivo) para identificar áreas relevantes nas imagens de satélite.
+- **Lógica Preditiva:** Aprende padrões visuais para gerar máscaras de probabilidade, avaliado por IoU.
 
-### 3.2. Modelo de Previsão de Rendimento
+### 3.2. Modelos de Previsão de Rendimento (Comparativo)
 
-* **Modelo Escolhido:** `RandomForestRegressor` do Scikit-learn.
-    * **Justificativa:** Florestas Aleatórias são robustas, lidam bem com relações não-lineares entre features e o alvo, capturam interações entre features e são menos sensíveis à multicolinearidade (observada entre as features NDVI) e à escala das features em comparação com modelos lineares. Adequado para dados tabulares com um número moderado de amostras.
-* **Lógica Preditiva:** O modelo combina as previsões de múltiplas árvores de decisão treinadas em subconjuntos dos dados e das features. Ele aprende a mapear as combinações das features de entrada (área colhida, estatísticas NDVI, valores do ano anterior) para uma previsão do valor contínuo do `Rendimento_Medio_kg_ha`.
-* **Avaliação:** O desempenho foi avaliado usando RMSE (erro na unidade do alvo - kg/ha), MAE (erro absoluto médio) e R² (proporção da variância explicada). A divisão treino/teste foi feita temporalmente para simular um cenário de previsão real.
+- **Modelos Testados:** `Linear Regression`, `Ridge Regression`, `Decision Tree Regressor`, `Random Forest Regressor`, `Gradient Boosting Regressor`.
+- **Justificativa:** Para avaliar diferentes abordagens de regressão no dataset disponível (relativamente pequeno após limpeza). Foram incluídos:
+  - Modelos Lineares (Linear, Ridge): Baselines simples, bons para relações lineares e interpretação de coeficientes. Ridge adiciona regularização.
+  - Árvore de Decisão: Modelo não-linear simples, propenso a overfitting mas útil para entender partições nos dados.
+  - Modelos Ensemble (Random Forest, Gradient Boosting): Combinam múltiplas árvores para melhorar a robustez, capturar não-linearidades e interações, geralmente com melhor desempenho preditivo. RandomForest é menos sensível a hiperparâmetros, Gradient Boosting pode ser mais potente mas requer mais tuning.
+- **Lógica Preditiva:** Cada modelo aprende a mapear as features de entrada (área, NDVI, clima, lags) para uma previsão do valor contínuo do `Rendimento_Medio_kg_ha`, usando suas respectivas lógicas internas (linear, partições de árvore, combinação de árvores).
+- **Avaliação:** Comparação baseada em RMSE, MAE e R² no conjunto de teste (separado temporalmente), além da análise de importância/coeficientes das features.
 
 ## 4. Análises Exploratórias e Estatísticas
 
-* **Análise NDVI:** Foram calculadas estatísticas descritivas para a série temporal de NDVI após a limpeza.
-* **Análise de Correlação:** Uma matriz de correlação foi calculada para as features e a variável alvo no DataFrame final (`df_final_cleaned`).
+- **Análise NDVI:** Estatísticas descritivas calculadas, série temporal plotada (opcional).
+- **Análise de Correlação:** Matriz de correlação calculada e visualizada para features e alvo no dataset final.
+  ![Heatmap](/images//heatmap.png)
 
-    * *Observação:* As correlações lineares entre as features disponíveis e o rendimento médio foram fracas. No entanto, multicolinearidade foi observada entre as features NDVI.
-    * ![Heatmap](/images/Heatmap.png)
-
-    * *Outras análises (adicionar conforme realizado):*
-    * ![Análise de Série Temporal NDVI](/images/image.png)
-    * ![Pairplot](/images/Pairplot.png)
+- _Outras análises:_  
+  **NDVI:**  
+  ![NDVI](/images/ndvi.png)  
+  **Pairplot:**  
+  ![Pairplot](/images/pairplot.png)
 
 ## 5. Resultados e Justificativa Técnica
 
 ### 5.1. Resultados da Segmentação
 
-* O modelo DeepLabV3+ foi treinado por `10` épocas.
-* A melhor métrica IoU obtida no conjunto de **validação** foi `0.3583`.
-* No conjunto de **teste**, o modelo alcançou um **IoU médio de `[Valor do Test IoU]`**.
+- Modelo DeepLabV3+ treinado por `200` épocas.
+- Melhor IoU na validação: `0.4546`.
+- **IoU médio no teste: `0.4200`**.
 
-    * **Visualização de Exemplo:**
-        ![Imagem Original vs Máscara Real vs Predição](/images/imagemreal_mascara_real_predicao.png)
+  - **Visualização de Exemplo:**
+    ![predicao_de_segmentacao](/images/predicao_de_segmentacao.png)
 
-### 5.2. Resultados da Previsão de Rendimento
+### 5.2. Resultados da Previsão de Rendimento (Comparativo de Modelos)
 
-* O modelo RandomForestRegressor foi treinado nos dados de 2001 a 2024 e testado nos anos 2013 a 2023.
-* **Métricas de Avaliação (Conjunto de Teste):**
-    * RMSE: `37.9532` kg/ha
-    * MAE: `29.9620` kg/ha
-    * **R²: `-0.3796`**
-* **Interpretação:** O valor do R² foi **negativo (`-0.3796`)**, indicando que o modelo performou pior do que um modelo ingênuo que previsse apenas a média do rendimento para o período de teste. Isso sugere que o modelo **não generalizou bem** para os anos não vistos, possivelmente devido ao pequeno tamanho do dataset de treino (2001-2023), overfitting, ou falta de features preditivas suficientes para capturar a dinâmica do rendimento nos anos de teste.
-    * **Gráfico Previsto vs Real:**
-    ![Rendimento Previsto vs Real](/images/rendimento_previsto_real.png)
-* **Importância das Features:** As features mais importantes identificadas pelo RandomForest foram o rendimento e a área colhida do ano anterior, seguidas pela área colhida atual. As features de NDVI tiveram menor importância relativa neste modelo.
-    * `[Inserir Gráfico: Importância das Features aqui]`![Importância das Features](/images/importancia_das_features.png)
+- Múltiplos modelos de regressão foram treinados nos dados de `2000` a `2023` e testados nos anos `2016` a `2023`.
+- **Comparativo de Métricas (Conjunto de Teste):**
+  
 
-* **Conclusão Técnica:** Embora o fluxo de trabalho completo tenha sido implementado, o modelo final de previsão de rendimento apresentou limitações significativas em sua capacidade preditiva para o período de teste com as features disponíveis. Recomenda-se explorar features adicionais (meteorologia detalhada, dados de manejo), modelos alternativos, ou obter um histórico de dados mais longo para melhorar a performance. A limitação na integração da feature de segmentação também impactou o potencial do modelo.
+- **Interpretação:** Observou-se que  todos os modelos apresentaram R² baixo ou negativo, indicando dificuldade em generalizar. O modelo SVR teve o melhor desempenho relativo, mas ainda assim não foi satisfatório chegando a valor de R2 = -0.989003. As possíveis causas incluem o dataset pequeno, a falta de features importantes (como dados meteorológicos detalhados, por exemplo) ou mudanças no comportamento da série temporal.
+  - **Gráfico Comparativo Previsto vs Real:**
+    ![comparativo_previsto](/images/comparativo_previsto.png)
+- **Importância das Features / Coeficientes:** A análise mostrou que [Resumir principais features, ex: features lagged tiveram maior importância para os modelos de árvore, enquanto features X foram mais relevantes para modelos Y].
+  ![linear_regression](/images/linear_regression.png)
+  ![ridge_regression](/images/ridge_regression.png)
+  ![decision_tree](/images/decision_tree.png)
+  ![random_forrest](/images/random_forrest.png)
+  ![gradient_boost](/images/gradient_boost.png)
+  ![xgboost](/images/xgboost.png)
+
+- **Conclusão Técnica:** O projeto implementou com sucesso um pipeline completo, desde a segmentação de imagens até a modelagem de previsão de rendimento com comparação de algoritmos. No entanto, a capacidade preditiva do modelo de rendimento foi limitada com os dados e features atuais, destacando a importância de enriquecimento de dados (clima, manejo) e potencialmente de um histórico mais longo para melhorar a acurácia em futuras iterações. A análise comparativa dos modelos ajuda a entender quais abordagens podem ser mais promissoras com dados melhores.
 
 ## 6. Como Executar (Usando Google Colab)
 
 Este projeto foi desenvolvido e testado primariamente no Google Colab. Siga os passos abaixo para executá-lo:
 
-1.  **Abra o Notebook no Google Colab:**
-    * Acesse o repositório do projeto no GitHub: [https://github.com/Fiap-Team-1tiaor-2024/ingredion-challenge](https://github.com/Fiap-Team-1tiaor-2024/ingredion-challenge)
-    * Navegue até a pasta `notebooks/` ou `scripts/` (ou onde quer que o arquivo `.ipynb` principal esteja localizado).
-    * Clique no arquivo do notebook (ex: `Challenge_Ingredion_Sprint_2.ipynb`).
-    * No topo da visualização do notebook no GitHub, clique no emblema "Open in Colab".
+1. **Abra o Notebook no Google Colab:**
 
-2.  **Prepare o Ambiente Colab:**
-    * **Monte seu Google Drive:** A primeira célula do notebook contém código para montar seu Google Drive. Execute esta célula e autorize o acesso quando solicitado. Isso é essencial para carregar seus dados e salvar o modelo treinado.
-    * **Instale Dependências (se necessário):** A primeira célula também pode conter comandos `!pip install ...` (geralmente comentados). O Colab já vem com muitas bibliotecas pré-instaladas (`pandas`, `numpy`, `scikit-learn`, `matplotlib`, `opencv`, `torch`, `torchvision`), mas se alguma específica estiver faltando ou precisar de uma versão diferente, descomente e execute os comandos `!pip install`. A biblioteca `openpyxl` pode ser necessária para ler o arquivo `.xlsx`: `!pip install openpyxl`.
+   - Acesse o repositório do projeto no GitHub: [https://github.com/Fiap-Team-1tiaor-2024/ingredion-challenge](https://github.com/Fiap-Team-1tiaor-2024/ingredion-challenge)
+   - Navegue até a pasta que contém o arquivo `.ipynb` principal.
+   - Clique no arquivo do notebook (ex: `Challenge_Ingredion_Sprint_2.ipynb`).
+   - No topo da visualização do notebook no GitHub, clique no emblema "Open in Colab".
 
-3.  **Configure os Caminhos dos Arquivos:**
-    * **MUITO IMPORTANTE:** Na primeira célula de código (onde estão as configurações e imports), localize as variáveis de caminho como `DRIVE_BASE_PATH`, `PROD_CSV_PATH`, `NDVI_FILE_PATH`, `SAVE_DIR`, etc.
-    * **AJUSTE** esses caminhos para que correspondam **exatamente** à estrutura de pastas e aos nomes dos arquivos dentro do **seu Google Drive**, onde você salvou os dados (imagens, máscaras, CSV, XLSX) e onde deseja salvar os resultados (como o modelo treinado).
-    * Exemplo: Se seus dados estão em uma pasta chamada "Challenge_Sprint2" dentro do seu "Meu Drive", o `DRIVE_BASE_PATH` seria algo como:
-      ```python
-      DRIVE_BASE_PATH = "/content/drive/MyDrive/Challenge_Sprint2/data"
-      ```
+2. **Prepare o Ambiente Colab:**
 
-4.  **Execute as Células:**
-    * Execute as células do notebook sequencialmente, uma após a outra, clicando no botão "Play" de cada célula ou usando "Ambiente de execução" -> "Executar tudo".
-    * Acompanhe a saída de cada célula para verificar se há erros ou avisos.
-    * **Atenção:** O treinamento do modelo de segmentação (Célula 6) pode demorar bastante tempo, dependendo da disponibilidade da GPU no Colab e do número de épocas (`NUM_EPOCHS_SEGMENTATION`).
+   - **Monte seu Google Drive:** Execute a primeira célula do notebook para montar seu Google Drive e autorize o acesso.
+   - **Instale Dependências (se necessário):** Verifique a primeira célula por comandos `!pip install ...`.
 
-5.  **Resultados:**
-    * Os gráficos (Heatmap, Previsto vs Real, etc.) serão exibidos no output das células correspondentes. Salve-os como imagens para incluir neste README.
-    * O melhor modelo de segmentação será salvo no caminho especificado pela variável `BEST_MODEL_PATH` no seu Google Drive.
-    * As métricas de avaliação dos modelos serão impressas na saída das células de avaliação.
+3. **Configure os Caminhos dos Arquivos:**
+
+   - **MUITO IMPORTANTE:** Na primeira célula de código, **AJUSTE** as variáveis de caminho (`DRIVE_BASE_PATH`, `PROD_CSV_PATH`, `NDVI_FILE_PATH`, `SAVE_DIR`, etc.) para que apontem para os locais corretos dos seus dados no **seu Google Drive**.
+
+4. **Execute as Células:**
+
+   - Execute as células do notebook sequencialmente ("Ambiente de execução" -> "Executar tudo" ou célula por célula).
+   - Acompanhe a saída de cada célula. O treinamento de segmentação pode demorar.
+
+5. **Resultados:**
+   - Gráficos e métricas serão exibidos nas saídas das células.
+   - O modelo de segmentação treinado será salvo no `SAVE_DIR` no seu Drive.
 
 ## 7. Autores
 
-* Gabriela da Cunha Rocha - RM561041@fiap.com.br
-* Gustavo Segantini Rossignolli - RM560111@fiap.com.br
-* Vitor Lopes Romão - RM559858@fiap.com.br
+- Gabriela da Cunha Rocha - <RM561041@fiap.com.br>
+- Gustavo Segantini Rossignolli - <RM560111@fiap.com.br>
+- Vitor Lopes Romão - <RM559858@fiap.com.br>
+
 ---

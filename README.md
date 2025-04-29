@@ -39,12 +39,11 @@ O processo de preparação dos dados envolveu múltiplas fontes e etapas:
 ### 1.3. Dados de NDVI
 
 - **Fonte:** Arquivo `NDVI.csv` (série temporal, ponto de referência, 2000-2025).
-- **Pré-processamento:** Leitura com `pd.read_excel`, tratamento de cabeçalho, conversão de `Data` (datetime) e `NDVI` (float), criação da coluna `Ano`.
+- **Pré-processamento:** Leitura, tratamento de cabeçalho, conversão de `Data` (datetime) e `NDVI` (float), criação da coluna `Ano`.
 
 ### 1.4. Integração e Engenharia de Features (Dados Tabulares)
 
 - **Agregação NDVI:** Cálculo de estatísticas anuais (`ndvi_medio`, `ndvi_max`, etc.) e trimestrais (`ndvi_medio_trim_TX`) a partir dos dados de NDVI (filtrados > 0.1 e para anos <= 2023).
-- **Features Meteorológicas (Exemplo):** Demonstração da agregação anual e trimestral de dados hipotéticos de precipitação (o código para carregar e agregar dados reais do INMET foi fornecido como exemplo, mas precisa ser implementado com dados reais baixados pelo usuário).
 - **Merge:** União dos dataframes de produtividade, NDVI agregado (anual e trimestral) e clima agregado (anual e trimestral - se implementado) usando a coluna `Ano`.
 - **Features Lagged:** Criação de features do ano anterior (`_lag1`) para rendimento e área colhida.
 - **Limpeza Final:** Remoção de linhas com `NaN` (anos iniciais sem NDVI/lag/clima), resultando no dataframe `df_ready_for_model` (ou `df_final_cleaned`) para modelagem (anos 2001-2023, ou o período resultante após adicionar features climáticas).
